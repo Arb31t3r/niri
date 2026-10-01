@@ -1840,6 +1840,53 @@ impl<W: LayoutElement> Workspace<W> {
             })
     }
 
+    pub fn resize_bars_under(&self, pos: Point<f64, Logical>) -> Option<(&W, ResizeEdge)> {
+        self.tiles_with_render_positions()
+            .find_map(|(tile, tile_pos, visible)| {
+                if !visible {
+                    return None;
+                }
+                // TODO: Make configurable?
+                const BAR_OUTER_SIZE: f64 = 15.;
+                const BAR_INNER_SIZE: f64 = 5.;
+
+                let size = tile.tile_size().to_f64();
+                let pos_within_tile = pos - tile_pos.to_f64();
+
+                let within_expanded_tile = (-BAR_OUTER_SIZE..=size.w + BAR_OUTER_SIZE)
+                    .contains(&pos_within_tile.x)
+                    && (-BAR_OUTER_SIZE..=size.h + BAR_OUTER_SIZE).contains(&pos_within_tile.y);
+
+                if !within_expanded_tile {
+                    return None;
+                }
+
+                let mut edges = ResizeEdge::empty();
+
+                if (-BAR_OUTER_SIZE..0. + BAR_INNER_SIZE).contains(&pos_within_tile.x) {
+                    edges |= ResizeEdge::LEFT;
+                } else if (size.w - BAR_INNER_SIZE..=size.w + BAR_OUTER_SIZE)
+                    .contains(&pos_within_tile.x)
+                {
+                    edges |= ResizeEdge::RIGHT;
+                }
+
+                if (-BAR_OUTER_SIZE..0. + BAR_INNER_SIZE).contains(&pos_within_tile.y) {
+                    edges |= ResizeEdge::TOP;
+                } else if (size.h - BAR_INNER_SIZE..=size.h + BAR_OUTER_SIZE)
+                    .contains(&pos_within_tile.y)
+                {
+                    edges |= ResizeEdge::BOTTOM;
+                }
+
+                if edges == ResizeEdge::empty() {
+                    None
+                } else {
+                    Some((tile.window(), edges))
+                }
+            })
+    }
+
     pub fn descendants_added(&mut self, id: &W::Id) -> bool {
         self.floating.descendants_added(id)
     }
