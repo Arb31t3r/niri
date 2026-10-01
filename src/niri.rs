@@ -191,7 +191,7 @@ use crate::utils::xwayland::satellite::Satellite;
 use crate::utils::{
     center, center_f64, expand_home, get_monotonic_time, ipc_transform_to_smithay, is_mapped,
     logical_output, make_screenshot_path, output_matches_name, output_size, panel_orientation,
-    send_scale_transform, winit_scale, write_png_rgba8, xwayland,
+    send_scale_transform, winit_scale, write_png_rgba8, xwayland, ResizeEdge,
 };
 use crate::window::mapped::MappedId;
 use crate::window::{InitialConfigureState, Mapped, ResolvedWindowRules, Unmapped, WindowRef};
@@ -3578,6 +3578,22 @@ impl Niri {
     pub fn window_under_cursor(&self) -> Option<&Mapped> {
         let pos = self.seat.get_pointer().unwrap().current_location();
         self.window_under(pos)
+    }
+
+    /// Returns the Resize Edge under the cursor, alongside the Window it belongs to.
+    pub fn resize_under_cursor(&self) -> Option<(&Mapped, ResizeEdge)> {
+        if self.exit_confirm_dialog.is_open()
+            || self.is_locked()
+            || self.screenshot_ui.is_open()
+            || self.window_mru_ui.is_open()
+        {
+            return None;
+        }
+
+        let pos = self.seat.get_pointer().unwrap().current_location();
+        let (output, pos_within_output) = self.output_under(pos)?;
+        let (window, edge) = self.layout.resize_bar_under(output, pos_within_output)?;
+        Some((window, edge))
     }
 
     /// Returns contents under the given point.
