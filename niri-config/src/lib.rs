@@ -92,6 +92,7 @@ pub struct Config {
     pub debug: Debug,
     pub workspaces: Vec<Workspace>,
     pub recent_windows: RecentWindows,
+    pub enable_mouse_resize: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -241,6 +242,10 @@ where
 
                 "prefer-no-csd" => {
                     config.borrow_mut().prefer_no_csd = Flag::decode_node(node, ctx)?.0
+                }
+
+                "enable-mouse-resize" => {
+                    config.borrow_mut().enable_mouse_resize = Flag::decode_node(node, ctx)?.0
                 }
 
                 "screenshot-path" => {
@@ -1283,6 +1288,8 @@ mod tests {
             spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
             prefer-no-csd
+
+            enable-mouse-resize
 
             cursor {
                 xcursor-theme "breeze_cursors"
@@ -2953,6 +2960,7 @@ mod tests {
                     },
                 ],
             },
+            enable_mouse_resize: true,
         }
         "#);
     }

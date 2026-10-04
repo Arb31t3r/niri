@@ -3592,6 +3592,11 @@ impl Niri {
 
         let pos = self.seat.get_pointer().unwrap().current_location();
         let (output, pos_within_output) = self.output_under(pos)?;
+
+        if self.is_sticky_obscured_under(output, pos_within_output) {
+            return None;
+        }
+
         let (window, edge) = self.layout.resize_bar_under(output, pos_within_output)?;
         Some((window, edge))
     }
