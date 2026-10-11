@@ -610,6 +610,7 @@ pub struct PointContents {
     pub hot_corner: bool,
     // Point is over the overview.
     pub overview: bool,
+    pub resize_edges: Option<ResizeEdge>,
 }
 
 #[derive(Debug, Default)]
@@ -3692,6 +3693,11 @@ impl Niri {
 
     /// Returns the Resize Edge under the cursor, alongside the Window it belongs to.
     pub fn resize_under_cursor(&self) -> Option<(&Mapped, ResizeEdge)> {
+        let pos = self.seat.get_pointer().unwrap().current_location();
+        self.resize_under(pos)
+    }
+
+    fn resize_under(&self, pos: Point<f64, Logical>) -> Option<(&Mapped, ResizeEdge)> {
         if self.exit_confirm_dialog.is_open()
             || self.is_locked()
             || self.screenshot_ui.is_open()
@@ -3700,15 +3706,15 @@ impl Niri {
             return None;
         }
 
-        let pos = self.seat.get_pointer().unwrap().current_location();
         let (output, pos_within_output) = self.output_under(pos)?;
 
-        if self.is_sticky_obscured_under(output, pos_within_output) {
+        if self.is_sticky_obscured_under(output, pos_within_output)
+            || self.is_layout_obscured_under(output, pos_within_output)
+        {
             return None;
         }
 
-        let (window, edge) = self.layout.resize_bar_under(output, pos_within_output)?;
-        Some((window, edge))
+        self.layout.resize_bar_under(output, pos_within_output)
     }
 
     /// Returns contents under the given point.
@@ -3759,6 +3765,8 @@ impl Niri {
         if self.screenshot_ui.is_open() || self.window_mru_ui.is_open() {
             return rv;
         }
+
+        rv.resize_edges = self.resize_under(pos).map(|(_, edge)| edge);
 
         let layers = layer_map_for_output(output);
         let layer_surface_under = |layer, popup| {
@@ -3852,6 +3860,7 @@ impl Niri {
             if self.is_inside_hot_corner(output, pos_within_output) {
                 rv.overview = is_overview_open;
                 rv.hot_corner = true;
+                rv.resize_edges = None;
                 return rv;
             }
 
@@ -4143,7 +4152,7 @@ impl Niri {
 
         // Get the render cursor to draw.
         let cursor_scale = output_scale.integer_scale();
-        let render_cursor = self.cursor_manager.get_render_cursor(cursor_scale);
+        let render_cursor = self.get_render_cursor(cursor_scale);
 
         let output_scale = Scale::from(output.current_scale().fractional_scale());
 
@@ -7285,6 +7294,25 @@ impl Niri {
                 self.layer_shell_on_demand_focus = Some(layer.clone());
             }
         }
+    }
+
+    pub fn get_render_cursor(&self, scale: i32) -> RenderCursor {
+        if self.tablet_cursor_location.is_none()
+            && self.config.borrow().enable_mouse_resize
+            && !self.exit_confirm_dialog.is_open()
+            && !self.is_locked()
+            && !self.screenshot_ui.is_open()
+            && !self.window_mru_ui.is_open()
+            && !self.seat.get_pointer().unwrap().is_grabbed()
+        {
+            if let Some(edges) = self.pointer_contents.resize_edges {
+                return self
+                    .cursor_manager
+                    .get_render_cursor_named(edges.cursor_icon(), scale);
+            }
+        }
+
+        self.cursor_manager.get_render_cursor(scale)
     }
 
     pub fn do_screen_transition(&mut self, renderer: &mut GlesRenderer, delay_ms: Option<u16>) {
