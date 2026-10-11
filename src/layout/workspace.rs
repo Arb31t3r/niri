@@ -1846,6 +1846,15 @@ impl<W: LayoutElement> Workspace<W> {
                 if !visible {
                     return None;
                 }
+
+                if !self.floating().has_window(tile.window().id())
+                    && !self.scrolling().columns().any(|col| {
+                        col.contains(tile.window().id()) && col.pending_sizing_mode().is_normal()
+                    })
+                {
+                    return None;
+                }
+
                 // TODO: Make configurable?
                 const BAR_OUTER_SIZE: f64 = 15.;
                 const BAR_INNER_SIZE: f64 = 5.;

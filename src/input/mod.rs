@@ -3250,29 +3250,31 @@ impl State {
             self.niri.focus_layer_surface_if_on_demand(layer_under);
         }
 
-        if self.niri.config.borrow().enable_mouse_resize {
+        if self.niri.config.borrow().enable_mouse_resize
+            && button == Some(MouseButton::Left)
+            && !pointer.is_grabbed()
+            && button_state == ButtonState::Pressed
+        {
             if let Some((mapped, edges)) = self.niri.resize_under_cursor() {
-                let window = mapped.window.clone();
-                self.niri
-                    .cursor_manager
-                    .set_cursor_image(CursorImageStatus::Named(edges.cursor_icon()));
-                if button == Some(MouseButton::Left) && !pointer.is_grabbed() {
-                    if !edges.is_empty() {
-                        self.niri.layout.activate_window(&window);
-                        if self
-                            .niri
-                            .layout
-                            .interactive_resize_begin(window.clone(), edges)
-                        {
-                            let start_data = PointerGrabStartData {
-                                focus: None,
-                                button: button_code,
-                                location: pointer.current_location(),
-                            };
-                            let start_data = AnyStartData::Pointer(start_data);
-                            let grab = ResizeGrab::new(start_data, window.clone());
-                            pointer.set_grab(self, grab, serial, Focus::Clear);
-                        }
+                if !edges.is_empty() {
+                    let window = mapped.window.clone();
+                    self.niri.layout.activate_window(&window);
+                    if self
+                        .niri
+                        .layout
+                        .interactive_resize_begin(window.clone(), edges)
+                    {
+                        let start_data = PointerGrabStartData {
+                            focus: None,
+                            button: button_code,
+                            location: pointer.current_location(),
+                        };
+                        let start_data = AnyStartData::Pointer(start_data);
+                        let grab = ResizeGrab::new(start_data, window.clone());
+                        self.niri
+                            .cursor_manager
+                            .set_cursor_image(CursorImageStatus::Named(edges.cursor_icon()));
+                        pointer.set_grab(self, grab, serial, Focus::Clear);
                     }
                 }
             }
