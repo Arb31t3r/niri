@@ -9,6 +9,8 @@ spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
 prefer-no-csd
 
+enable-mouse-resize
+
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
 environment {
@@ -114,6 +116,14 @@ With `prefer-no-csd` set, applications that negotiate server-side decorations th
 
 ```kdl
 prefer-no-csd
+```
+
+### `enable-mouse-resize`
+
+This flag will enable mouse only window resizing by grabbing the edges of the windows.
+
+```kdl
+enable-mouse-resize
 ```
 
 ### `screenshot-path`
@@ -375,7 +385,7 @@ You will need to increase `passes` to be able to use a bigger `offset` without a
 
 When configuring blur, try increasing `offset` first (since it doesn't cause any extra GPU load) until you start getting artifacts.
 Then, if you still need smoother blur, increase `passes` by 1.
-Keep doing this until you get the desired visuals. 
+Keep doing this until you get the desired visuals.
 
 ```kdl
 blur {
