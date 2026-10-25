@@ -1841,9 +1841,11 @@ impl<W: LayoutElement> Workspace<W> {
     }
 
     pub fn resize_bars_under(&self, pos: Point<f64, Logical>) -> Option<(&W, ResizeEdge)> {
+        let owner = self.window_under(pos).map(|(window, _)| window.id());
+
         self.tiles_with_render_positions()
-            .find_map(|(tile, tile_pos, visible)| {
-                if !visible {
+            .filter_map(|(tile, tile_pos, visible)| {
+                if !visible || owner.is_some_and(|id| id != tile.window().id()) {
                     return None;
                 }
 
@@ -1888,12 +1890,18 @@ impl<W: LayoutElement> Workspace<W> {
                     edges |= ResizeEdge::BOTTOM;
                 }
 
-                if edges == ResizeEdge::empty() {
-                    None
-                } else {
-                    Some((tile.window(), edges))
+                if edges.is_empty() {
+                    return None;
                 }
+
+                // When bars overlap in a gap, prefer the tile with the closest edge.
+                // min_by() keeps render order as the tie-breaker.
+                let dx = (-pos_within_tile.x).max(0.).max(pos_within_tile.x - size.w);
+                let dy = (-pos_within_tile.y).max(0.).max(pos_within_tile.y - size.h);
+                Some((tile.window(), edges, dx * dx + dy * dy))
             })
+            .min_by(|a, b| a.2.total_cmp(&b.2))
+            .map(|(window, edges, _)| (window, edges))
     }
 
     pub fn descendants_added(&mut self, id: &W::Id) -> bool {
