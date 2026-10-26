@@ -105,7 +105,7 @@ This flag will make niri ask the applications to omit their client-side decorati
 If an application will specifically ask for CSD, the request will be honored.
 Additionally, clients will be informed that they are tiled, removing some rounded corners.
 
-With `prefer-no-csd` set, applications that negotiate server-side decorations through the xdg-decoration protocol will have focus ring and border drawn around them *without* a solid colored background.
+With `prefer-no-csd` set, applications that negotiate server-side decorations through the xdg-decoration protocol will have focus ring and border drawn around them _without_ a solid colored background.
 
 > [!NOTE]
 > Unlike most other options, changing `prefer-no-csd` will not entirely affect already running applications.
@@ -119,6 +119,8 @@ prefer-no-csd
 ```
 
 ### `enable-mouse-resize`
+
+<sup>Since: next release</sup>
 
 This flag will enable mouse only window resizing by grabbing the edges of the windows.
 
